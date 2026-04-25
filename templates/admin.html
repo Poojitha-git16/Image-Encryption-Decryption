@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>⚙️ Admin Panel</h1>
+        <p>Manage users and monitor system activity</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">👥</div>
+            <h3 style="color: #333; margin-bottom: 0.5rem;">Total Users</h3>
+            <p style="font-size: 2rem; font-weight: bold; color: #667eea; margin: 0;">{{ users|length }}</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2rem; color: #28a745; margin-bottom: 0.5rem;">🔒</div>
+            <h3 style="color: #333; margin-bottom: 0.5rem;">Total Images</h3>
+            <p style="font-size: 2rem; font-weight: bold; color: #28a745; margin: 0;">{{ images|length }}</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2rem; color: #ffc107; margin-bottom: 0.5rem;">📊</div>
+            <h3 style="color: #333; margin-bottom: 0.5rem;">Avg Images/User</h3>
+            <p style="font-size: 2rem; font-weight: bold; color: #ffc107; margin: 0;">
+                {{ "%.1f"|format(images|length / users|length if users|length > 0 else 0) }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Users Management -->
+    <div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+        <h2 style="color: #333; margin-bottom: 1.5rem;">👥 Users Management</h2>
+        
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Images</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.username }}</strong>
+                            {% if user.id == session.user_id %}
+                                <span style="color: #667eea; font-size: 0.8rem;"> (You)</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span style="background: #667eea; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">Admin</span>
+                            {% else %}
+                                <span style="background: #6c757d; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">User</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.images|length }}</td>
+                        <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if user.id != session.user_id %}
+                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" 
+                                      onsubmit="return confirm('Are you sure you want to delete user {{ user.username }}? This will also delete all their encrypted images.')" 
+                                      style="display: inline;">
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                        🗑️ Delete
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span style="color: #999; font-size: 0.9rem;">Cannot delete</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Images Overview -->
+    <div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #333; margin-bottom: 1.5rem;">🔒 Images Overview</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            {% for algorithm in ['AES', 'XOR'] %}
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #333; margin-bottom: 0.5rem;">{{ algorithm }} Algorithm</h4>
+                <p style="color: #666; font-size: 0.9rem; margin: 0;">
+                    {{ images|selectattr('algorithm', 'equalto', algorithm)|list|length }} images encrypted
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Filename</th>
+                        <th>Owner</th>
+                        <th>Algorithm</th>
+                        <th>Size</th>
+                        <th>Uploaded</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for image in images[:20] %}
+                    <tr>
+                        <td>{{ image.id }}</td>
+                        <td>{{ image.original_filename }}</td>
+                        <td>{{ image.user.username }}</td>
+                        <td>
+                            <span style="background: {% if image.algorithm == 'AES' %}#667eea{% else %}#ffc107{% endif %}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                                {{ image.algorithm }}
+                            </span>
+                        </td>
+                        <td>{{ "%.2f"|format(image.file_size / 1024) }} KB</td>
+                        <td>{{ image.created_at.strftime('%b %d, %Y %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if images|length > 20 %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #666;">
+                            ... and {{ images|length - 20 }} more images
+                        </td>
+                    </tr>
+                    {% endif %}
+                    
+                    {% if images|length == 0 %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #999; padding: 2rem;">
+                            No images uploaded yet
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- System Actions -->
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">⚠️ System Actions</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <p style="margin-bottom: 1rem;">As an administrator, you have the following capabilities:</p>
+            <ul style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">Delete user accounts and their associated encrypted images</li>
+                <li style="margin-bottom: 0.5rem;">Monitor system usage and storage consumption</li>
+                <li style="margin-bottom: 0.5rem;">View encryption algorithm usage statistics</li>
+                <li>Manage user access and permissions</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #f8d7da; border-radius: 8px; border: 1px solid #dc3545;">
+            <p style="color: #721c24; margin: 0;">
+                <strong>⚠️ Warning:</strong> Deleting users will permanently remove all their encrypted images. This action cannot be undone.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Table sorting functionality
+function makeTableSortable(table) {
+    const headers = table.querySelectorAll('th');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    headers.forEach((header, index) => {
+        if (index === 0 || index === headers.length - 1) return; // Skip ID and Actions columns
+        
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            const sortedRows = rows.sort((a, b) => {
+                const aText = a.children[index].textContent.trim();
+                const bText = b.children[index].textContent.trim();
+                
+                // Try to parse as number
+                const aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
+                const bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+                
+                return aText.localeCompare(bText);
+            });
+            
+            // Clear and re-append sorted rows
+            tbody.innerHTML = '';
+            sortedRows.forEach(row => tbody.appendChild(row));
+        });
+    });
+}
+
+// Initialize sorting for all tables
+document.addEventListener('DOMContentLoaded', function() {
+    const tables = document.querySelectorAll('.admin-table');
+    tables.forEach(makeTableSortable);
+});
+
+// Search functionality
+function addSearchFunctionality() {
+    const searchDiv = document.createElement('div');
+    searchDiv.style.marginBottom = '1rem';
+    searchDiv.innerHTML = `
+        <input type="text" id="tableSearch" placeholder="Search users..." 
+               style="padding: 0.5rem; border: 2px solid #e1e5e9; border-radius: 8px; width: 300px;">
+    `;
+    
+    const firstTable = document.querySelector('.admin-table');
+    if (firstTable) {
+        firstTable.parentNode.insertBefore(searchDiv, firstTable);
+        
+        document.getElementById('tableSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = firstTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+}
+
+// Add search when page loads
+document.addEventListener('DOMContentLoaded', addSearchFunctionality);
+</script>
+
+<style>
+.admin-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e1e5e9;
+}
+
+.admin-table {
+    width: 100%;
+    min-width: 600px;
+    margin: 0;
+}
+
+.admin-table th:hover {
+    background: #e9ecef;
+}
+
+.admin-table tr {
+    transition: background-color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+    .admin-table-container {
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+</style>
+{% endblock %}

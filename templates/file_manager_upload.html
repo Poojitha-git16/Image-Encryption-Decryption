@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}File Manager Upload - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">📁 File Manager Upload</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Upload images directly from your file manager</p>
+        </div>
+
+        <div style="background: #e8f5e8; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="color: #155724; margin-bottom: 1rem;">📋 Instructions:</h3>
+            <ol style="color: #155724; line-height: 1.6;">
+                <li style="margin-bottom: 0.5rem;">Open your file manager (Windows Explorer, macOS Finder, etc.)</li>
+                <li style="margin-bottom: 0.5rem;">Navigate to the folder containing your images</li>
+                <li style="margin-bottom: 0.5rem;">Copy the full file paths of the images you want to upload</li>
+                <li style="margin-bottom: 0.5rem;">Paste the file paths in the text area below (one per line)</li>
+                <li style="margin-bottom: 0.5rem;">Set your encryption password and algorithm</li>
+                <li>Click "Upload & Encrypt Images" to process</li>
+            </ol>
+        </div>
+
+        {% if file_paths %}
+        <div style="background: #fff3cd; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="color: #856404; margin-bottom: 1rem;">📁 Selected Files:</h3>
+            <div style="max-height: 200px; overflow-y: auto;">
+                {% for file_path in file_paths %}
+                <div style="display: flex; align-items: center; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;">
+                    <span style="margin-right: 0.5rem;">🖼️</span>
+                    <span style="flex: 1; font-family: monospace; font-size: 0.9rem;">{{ file_path.split('/')[-1] }}</span>
+                    <span style="color: #666; font-size: 0.8rem;">Ready to upload</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('file_manager_upload') }}">
+            <div class="form-group">
+                <label for="file_paths" class="form-label">File Paths</label>
+                <textarea id="file_paths" name="file_paths" class="form-textarea" rows="6" required
+                          placeholder="C:\Users\YourName\Pictures\image1.jpg&#10;C:\Users\YourName\Pictures\image2.png&#10;/home/user/Pictures/photo.jpg&#10;/Users/username/Downloads/screenshot.png">{% if file_paths %}{{ file_paths | join('\n') }}{% endif %}</textarea>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Enter the full file paths, one per line. Supports Windows, macOS, and Linux paths.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="algorithm" class="form-label">Encryption Algorithm</label>
+                <select id="algorithm" name="algorithm" class="form-select" required>
+                    <option value="">Choose encryption method</option>
+                    <option value="AES">AES (Advanced Encryption Standard) - Recommended</option>
+                    <option value="XOR">XOR (Fast & Simple)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="encryption_password" class="form-label">Encryption Password</label>
+                <input type="password" id="encryption_password" name="encryption_password" class="form-input" required 
+                       placeholder="Create a strong encryption password" 
+                       oninput="updatePasswordIndicator(this.value, document.getElementById('encryption-strength'))">
+                <div id="encryption-strength" class="password-strength" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    ⚠️ Save this password securely! You'll need it to decrypt your images.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Encryption Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required 
+                       placeholder="Re-enter your encryption password"
+                       oninput="checkEncryptionPasswordMatch()">
+                <div id="encryption-match" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="uploadBtn">
+                🔐 Upload & Encrypt Images
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <a href="{{ url_for('upload') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                ← Back to Upload
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">💡 How to Get File Paths</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">Windows:</h4>
+            <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                <li>Select files in File Explorer</li>
+                <li>Hold Shift and right-click</li>
+                <li>Choose "Copy as path"</li>
+            </ol>
+            
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">macOS:</h4>
+            <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                <li>Select files in Finder</li>
+                <li>Right-click and hold Option</li>
+                <li>Choose "Copy [filename] as Pathname"</li>
+            </ol>
+            
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">Linux:</h4>
+            <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                <li>Select files in file manager</li>
+                <li>Right-click and choose "Copy"</li>
+                <li>Paste in terminal and use `pwd` for full paths</li>
+            </ol>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #d1ecf1; border-radius: 8px; border: 1px solid #bee5eb;">
+            <p style="color: #0c5460; margin: 0;">
+                <strong>📁 Supported Formats:</strong> JPG, JPEG, PNG, GIF, BMP, WebP, TIFF, TIF, ICO
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkEncryptionPasswordMatch() {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchIndicator = document.getElementById('encryption-match');
+    
+    if (confirmPassword.length === 0) {
+        matchIndicator.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchIndicator.textContent = '✓ Passwords match';
+        matchIndicator.style.color = '#28a745';
+    } else {
+        matchIndicator.textContent = '✗ Passwords do not match';
+        matchIndicator.style.color = '#dc3545';
+    }
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const filePaths = document.getElementById('file_paths').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Encryption passwords do not match. Please try again.');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Encryption password must be at least 8 characters long.');
+        return false;
+    }
+    
+    if (!filePaths.trim()) {
+        e.preventDefault();
+        alert('Please enter at least one file path.');
+        return false;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.textContent = '🔄 Processing...';
+    uploadBtn.disabled = true;
+});
+
+// Auto-resize textarea
+document.getElementById('file_paths').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+</script>
+
+<style>
+.password-strength {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+#file_paths {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+</style>
+{% endblock %}

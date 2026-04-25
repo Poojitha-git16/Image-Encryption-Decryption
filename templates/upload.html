@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Image - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">📤 Upload & Encrypt Image</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Securely encrypt your images with advanced algorithms</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <a href="{{ url_for('direct_upload') }}" class="btn btn-primary">
+                � Direct Upload
+            </a>
+            <a href="{{ url_for('upload_from_url') }}" class="btn btn-success">
+                🌐 URL Upload
+            </a>
+            {% if session.is_admin %}
+            <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+                ⚙️ Admin Panel
+            </a>
+            {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data" id="uploadForm">
+            <div class="form-group">
+                <label for="image" class="form-label">Select Image</label>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="uploadMode" value="single" checked style="margin-right: 0.5rem;">
+                        <span>Single Image</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="uploadMode" value="multiple" style="margin-right: 0.5rem;">
+                        <span>Multiple Images</span>
+                    </label>
+                </div>
+                
+                <div class="upload-area" id="dropZone">
+                    <div class="upload-icon">📸</div>
+                    <p class="upload-text" style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem;">
+                        Drag & drop your image(s) here or click to browse
+                    </p>
+                    <p style="color: #999; font-size: 0.9rem;">
+                        Supported formats: PNG, JPG, JPEG, GIF, BMP, WEBP, TIFF (Max 16MB per file)
+                    </p>
+                    <input type="file" id="image" name="image" accept="image/*" required style="display: none;">
+                </div>
+                
+                <!-- Image Preview -->
+                <div id="imagePreview" style="margin-top: 1rem; display: none;">
+                    <h4 style="color: #333; margin-bottom: 0.5rem;">🖼️ Preview:</h4>
+                    <img id="previewImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                </div>
+                <div id="fileInfo" style="margin-top: 1rem; display: none;">
+                    <div style="padding: 1rem; background: #e8f5e8; border-radius: 8px; border: 1px solid #28a745;">
+                        <p style="color: #155724; margin: 0;">
+                            <strong>Selected:</strong> <span id="fileName"></span>
+                        </p>
+                        <p style="color: #155724; margin: 0.5rem 0 0 0;">
+                            <strong>Size:</strong> <span id="fileSize"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="algorithm" class="form-label">Encryption Algorithm</label>
+                <select id="algorithm" name="algorithm" class="form-select" required>
+                    <option value="">Choose encryption method</option>
+                    <option value="AES">AES (Advanced Encryption Standard) - Recommended</option>
+                    <option value="XOR">XOR (Fast & Simple)</option>
+                </select>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    AES provides stronger security, XOR is faster for large files
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="encryption_password" class="form-label">Encryption Password</label>
+                <input type="password" id="encryption_password" name="encryption_password" class="form-input" required 
+                       placeholder="Create a strong encryption password" 
+                       oninput="updatePasswordIndicator(this.value, document.getElementById('encryption-strength'))">
+                <div id="encryption-strength" class="password-strength" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    ⚠️ Save this password securely! You'll need it to decrypt your image.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Encryption Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required 
+                       placeholder="Re-enter your encryption password"
+                       oninput="checkEncryptionPasswordMatch()">
+                <div id="encryption-match" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="uploadBtn">
+                🔐 Upload & Encrypt Image
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🔐 How It Works</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <ol style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">Upload your image using the drag-and-drop area</li>
+                <li style="margin-bottom: 0.5rem;">Choose your preferred encryption algorithm</li>
+                <li style="margin-bottom: 0.5rem;">Create a strong encryption password</li>
+                <li style="margin-bottom: 0.5rem;">Your image is encrypted and stored securely</li>
+                <li>Download the decrypted image anytime using your password</li>
+            </ol>
+        </div>
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+            <p style="color: #856404; margin: 0;">
+                <strong>⚠️ Important:</strong> Store your encryption password safely. If you lose it, the image cannot be recovered!
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('image');
+const uploadForm = document.getElementById('uploadForm');
+
+// Enhanced drag and drop for external app integration
+setupDragAndDrop(dropZone, fileInput);
+
+// Enhanced click to browse
+dropZone.addEventListener('click', function() {
+    fileInput.click();
+});
+
+// Enhanced drag and drop with external app support
+dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('dragover');
+    
+    const items = e.dataTransfer.items;
+    const files = e.dataTransfer.files;
+    
+    if (items && items.length > 0) {
+        // Handle items from external apps
+        const imageFiles = [];
+        let processedCount = 0;
+        
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            
+            if (item.kind === 'file') {
+                const file = item.getAsFile();
+                if (file && file.type.startsWith('image/')) {
+                    imageFiles.push(file);
+                }
+            } else if (item.kind === 'string' && item.type === 'text/uri-list') {
+                // Handle URLs dragged from browsers
+                item.getAsString(function(uri) {
+                    if (uri.match(/\.(jpg|jpeg|png|gif|bmp|webp|tiff)$/i)) {
+                        // Convert URL to file download
+                        downloadImageFromURL(uri.trim());
+                    }
+                });
+            }
+        }
+        
+        if (imageFiles.length > 0) {
+            handleDroppedFiles(imageFiles);
+        }
+    } else if (files && files.length > 0) {
+        // Handle regular file drops
+        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        if (imageFiles.length > 0) {
+            handleDroppedFiles(imageFiles);
+        }
+    }
+});
+
+function handleDroppedFiles(files) {
+    const algorithm = document.getElementById('algorithm').value || 'AES';
+    const password = document.getElementById('encryption_password').value;
+    
+    if (!password) {
+        alert('Please enter an encryption password first.');
+        return;
+    }
+    
+    if (password.length < 8) {
+        alert('Encryption password must be at least 8 characters long.');
+        return;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.querySelector('#uploadForm button[type="submit"]');
+    uploadBtn.textContent = '🔄 Processing...';
+    uploadBtn.disabled = true;
+    
+    // Convert files to base64 for upload
+    const filePromises = Array.from(files).map(file => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                resolve({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: e.target.result
+                });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    });
+    
+    Promise.all(filePromises).then(base64Files => {
+        // Send files via AJAX
+        fetch('/upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                files: base64Files,
+                algorithm: algorithm,
+                encryption_password: password
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(`Successfully uploaded ${result.uploaded} file(s)!`);
+                window.location.href = '/dashboard';
+            } else {
+                alert('Error: ' + result.error);
+            }
+        })
+        .catch(error => {
+            alert('Error uploading files: ' + error.message);
+        })
+        .finally(() => {
+            uploadBtn.textContent = '🔐 Upload & Encrypt Image';
+            uploadBtn.disabled = false;
+        });
+    }).catch(error => {
+        alert('Error processing files: ' + error.message);
+        uploadBtn.textContent = '🔐 Upload & Encrypt Image';
+        uploadBtn.disabled = false;
+    });
+}
+
+function downloadImageFromURL(url) {
+    const algorithm = document.getElementById('algorithm').value || 'AES';
+    const password = document.getElementById('encryption_password').value;
+    
+    if (!password || password.length < 8) {
+        alert('Please enter a valid encryption password first.');
+        return;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.querySelector('#uploadForm button[type="submit"]');
+    uploadBtn.textContent = '🔄 Downloading...';
+    uploadBtn.disabled = true;
+    
+    fetch('/upload_from_url', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            image_url: url,
+            algorithm: algorithm,
+            encryption_password: password
+        })
+    })
+    .then(response => response.text())
+    .then(html => {
+        // If successful, it will redirect
+        if (html.includes('dashboard')) {
+            window.location.href = '/dashboard';
+        } else {
+            alert('Error downloading image from URL');
+        }
+    })
+    .catch(error => {
+        alert('Error downloading image: ' + error.message);
+    })
+    .finally(() => {
+        uploadBtn.textContent = '🔐 Upload & Encrypt Image';
+        uploadBtn.disabled = false;
+    });
+}
+
+// Upload mode toggle
+document.querySelectorAll('input[name="uploadMode"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const fileInput = document.getElementById('image');
+        const uploadText = document.querySelector('.upload-text');
+        
+        if (this.value === 'multiple') {
+            fileInput.multiple = true;
+            uploadText.textContent = 'Drag & drop your images here or click to browse (multiple files)';
+        } else {
+            fileInput.multiple = false;
+            uploadText.textContent = 'Drag & drop your image here or click to browse';
+        }
+        
+        // Reset file input and previews
+        fileInput.value = '';
+        document.getElementById('fileInfo').style.display = 'none';
+        document.getElementById('imagePreview').style.display = 'none';
+    });
+});
+
+// File selection handler
+fileInput.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const uploadMode = document.querySelector('input[name="uploadMode"]:checked').value;
+    
+    if (files.length > 0) {
+        if (uploadMode === 'single') {
+            updateFileInfo(files[0]);
+        } else {
+            updateMultipleFilesInfo(files);
+        }
+    }
+});
+
+function updateFileInfo(file) {
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const uploadText = document.querySelector('.upload-text');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileInfo.style.display = 'block';
+    uploadText.textContent = `Selected: ${file.name}`;
+    
+    // Show image preview
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Validate file
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff'];
+    const maxSize = 16 * 1024 * 1024; // 16MB
+    
+    if (!allowedTypes.includes(file.type)) {
+        showFileError('Invalid file type. Please select an image file.');
+        return;
+    }
+    
+    if (file.size > maxSize) {
+        showFileError('File too large. Maximum size is 16MB.');
+        return;
+    }
+}
+
+function updateMultipleFilesInfo(files) {
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const uploadText = document.querySelector('.upload-text');
+    
+    // Calculate total size
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    
+    fileName.textContent = `${files.length} files selected`;
+    fileSize.textContent = formatFileSize(totalSize);
+    fileInfo.style.display = 'block';
+    uploadText.textContent = `Selected: ${files.length} files`;
+    
+    // Show first image as preview
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (files[0].type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(files[0]);
+    }
+    
+    // Validate all files
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff'];
+    const maxSize = 16 * 1024 * 1024; // 16MB per file
+    
+    for (const file of files) {
+        if (!allowedTypes.includes(file.type)) {
+            showFileError(`Invalid file type: ${file.name}. Only images are allowed.`);
+            return;
+        }
+        
+        if (file.size > maxSize) {
+            showFileError(`File too large: ${file.name}. Maximum size is 16MB per file.`);
+            return;
+        }
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showFileError(message) {
+    const fileInfo = document.getElementById('fileInfo');
+    fileInfo.innerHTML = `
+        <div style="padding: 1rem; background: #f8d7da; border-radius: 8px; border: 1px solid #dc3545;">
+            <p style="color: #721c24; margin: 0;">${message}</p>
+        </div>
+    `;
+    fileInfo.style.display = 'block';
+}
+
+function checkEncryptionPasswordMatch() {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchIndicator = document.getElementById('encryption-match');
+    
+    if (confirmPassword.length === 0) {
+        matchIndicator.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchIndicator.textContent = '✓ Passwords match';
+        matchIndicator.style.color = '#28a745';
+    } else {
+        matchIndicator.textContent = '✗ Passwords do not match';
+        matchIndicator.style.color = '#dc3545';
+    }
+}
+
+// Form validation
+uploadForm.addEventListener('submit', function(e) {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const algorithm = document.getElementById('algorithm').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Encryption passwords do not match. Please try again.');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Encryption password must be at least 8 characters long.');
+        return false;
+    }
+    
+    if (!algorithm) {
+        e.preventDefault();
+        alert('Please select an encryption algorithm.');
+        return false;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.textContent = '🔄 Encrypting...';
+    uploadBtn.disabled = true;
+});
+
+// Algorithm selection info
+document.getElementById('algorithm').addEventListener('change', function() {
+    const algorithm = this.value;
+    const smallText = this.nextElementSibling;
+    
+    if (algorithm === 'AES') {
+        smallText.innerHTML = '<strong style="color: #28a745;">✓ Recommended:</strong> AES provides military-grade security with PBKDF2 key derivation.';
+    } else if (algorithm === 'XOR') {
+        smallText.innerHTML = '<strong style="color: #ffc107;">⚡ Fast:</strong> XOR encryption is quick but less secure than AES.';
+    } else {
+        smallText.innerHTML = 'AES provides stronger security, XOR is faster for large files';
+    }
+});
+</script>
+
+<style>
+.password-strength {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.upload-area {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    transform: translateY(-2px);
+}
+
+.upload-area.dragover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: #764ba2;
+}
+
+#fileInfo {
+    animation: fadeIn 0.3s ease;
+}
+</style>
+{% endblock %}

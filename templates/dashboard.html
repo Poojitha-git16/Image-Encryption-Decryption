@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>🔐 Secure Dashboard</h1>
+        <p>Welcome back, {{ session.username }}! Manage your encrypted images here.</p>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">
+            📤 Upload New Image
+        </a>
+        {% if session.is_admin %}
+        <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+            ⚙️ Admin Panel
+        </a>
+        {% endif %}
+    </div>
+
+    {% if images %}
+    <div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #333; margin-bottom: 1.5rem;">Your Encrypted Images ({{ images|length }})</h2>
+        
+        <div class="image-grid">
+            {% for image in images %}
+            <div class="image-card fade-in">
+                <div class="image-preview">
+                    🔒
+                </div>
+                <div class="image-info">
+                    <h3>{{ image.original_filename }}</h3>
+                    <p><strong>Algorithm:</strong> {{ image.algorithm }}</p>
+                    <p><strong>Size:</strong> {{ "%.2f"|format(image.file_size / 1024) }} KB</p>
+                    <p><strong>Uploaded:</strong> {{ image.created_at.strftime('%b %d, %Y %H:%M') }}</p>
+                    
+                    <div class="image-actions">
+                        <a href="{{ url_for('decrypt', image_id=image.id) }}" class="btn btn-primary" style="flex: 1;">
+                            🔓 Decrypt
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_image', image_id=image.id) }}" style="display: inline;" 
+                              onsubmit="return confirm('Are you sure you want to delete this encrypted image?')">
+                            <button type="submit" class="btn btn-danger" style="flex: 1;">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; max-width: 600px;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📸</div>
+        <h2 style="color: #333; margin-bottom: 1rem;">No Encrypted Images Yet</h2>
+        <p style="color: #666; margin-bottom: 2rem;">Start by uploading your first image to encrypt it securely.</p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary">
+            📤 Upload Your First Image
+        </a>
+    </div>
+    {% endif %}
+
+    <div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🔐 Security Features</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #667eea; margin-bottom: 0.5rem;">AES Encryption</h4>
+                <p style="color: #666; font-size: 0.9rem;">Advanced Encryption Standard for maximum security</p>
+            </div>
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #667eea; margin-bottom: 0.5rem;">XOR Encryption</h4>
+                <p style="color: #666; font-size: 0.9rem;">Fast and efficient encryption option</p>
+            </div>
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #667eea; margin-bottom: 0.5rem;">Secure Storage</h4>
+                <p style="color: #666; font-size: 0.9rem;">Encrypted files stored securely on server</p>
+            </div>
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #667eea; margin-bottom: 0.5rem;">User Authentication</h4>
+                <p style="color: #666; font-size: 0.9rem;">Secure login system with session management</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add smooth animations
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.image-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+</script>
+{% endblock %}

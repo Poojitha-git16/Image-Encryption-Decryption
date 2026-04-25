@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Upload from Files - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">📁 Upload from Files</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Encrypt images from your computer</p>
+        </div>
+
+        {% if file_paths %}
+        <div style="background: #e8f5e8; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="color: #155724; margin-bottom: 1rem;">📋 Selected Files:</h3>
+            <div style="max-height: 200px; overflow-y: auto;">
+                {% for file_path in file_paths %}
+                <div style="display: flex; align-items: center; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;">
+                    <span style="margin-right: 0.5rem;">🖼️</span>
+                    <span style="flex: 1; font-family: monospace; font-size: 0.9rem;">{{ file_path.split('/')[-1] }}</span>
+                    <span style="color: #666; font-size: 0.8rem;">{{ "%.2f"|format(file_path | length / 1024) }} KB</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('upload_from_files') }}">
+            <input type="hidden" name="file_paths" value="{{ file_paths | join(',') }}">
+            
+            <div class="form-group">
+                <label for="algorithm" class="form-label">Encryption Algorithm</label>
+                <select id="algorithm" name="algorithm" class="form-select" required>
+                    <option value="">Choose encryption method</option>
+                    <option value="AES">AES (Advanced Encryption Standard) - Recommended</option>
+                    <option value="XOR">XOR (Fast & Simple)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="encryption_password" class="form-label">Encryption Password</label>
+                <input type="password" id="encryption_password" name="encryption_password" class="form-input" required 
+                       placeholder="Create a strong encryption password" 
+                       oninput="updatePasswordIndicator(this.value, document.getElementById('encryption-strength'))">
+                <div id="encryption-strength" class="password-strength" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    ⚠️ Save this password securely! You'll need it to decrypt your images.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Encryption Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required 
+                       placeholder="Re-enter your encryption password"
+                       oninput="checkEncryptionPasswordMatch()">
+                <div id="encryption-match" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="uploadBtn">
+                🔐 Encrypt {{ file_paths|length }} File{% if file_paths|length > 1 %}s{% endif %}
+            </button>
+        </form>
+
+        {% else %}
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+            <h3 style="color: #333; margin-bottom: 1rem;">No Files Selected</h3>
+            <p style="color: #666; margin-bottom: 2rem;">Please select files using the file dialog first.</p>
+            <a href="{{ url_for('open_file_dialog') }}" class="btn btn-primary">
+                📁 Open File Dialog
+            </a>
+        </div>
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <a href="{{ url_for('open_file_dialog') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                📁 Select More Files
+            </a>
+            <a href="{{ url_for('upload') }}" class="btn btn-secondary">
+                ← Back to Upload
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🖥️ System Integration</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <p style="margin-bottom: 1rem;">This feature integrates with your operating system's file dialog:</p>
+            <ul style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>Windows:</strong> PowerShell file dialog</li>
+                <li style="margin-bottom: 0.5rem;"><strong>macOS:</strong> AppleScript file dialog</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Linux:</strong> Zenity file dialog</li>
+                <li>Support for multiple file selection</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #d1ecf1; border-radius: 8px; border: 1px solid #bee5eb;">
+            <p style="color: #0c5460; margin: 0;">
+                <strong>ℹ️ Info:</strong> If the file dialog doesn't work, you can always use the regular web upload interface.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkEncryptionPasswordMatch() {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchIndicator = document.getElementById('encryption-match');
+    
+    if (confirmPassword.length === 0) {
+        matchIndicator.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchIndicator.textContent = '✓ Passwords match';
+        matchIndicator.style.color = '#28a745';
+    } else {
+        matchIndicator.textContent = '✗ Passwords do not match';
+        matchIndicator.style.color = '#dc3545';
+    }
+}
+
+// Form validation
+document.querySelector('form')?.addEventListener('submit', function(e) {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Encryption passwords do not match. Please try again.');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Encryption password must be at least 8 characters long.');
+        return false;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.textContent = '🔄 Encrypting...';
+    uploadBtn.disabled = true;
+});
+</script>
+
+<style>
+.password-strength {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

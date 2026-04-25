@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Direct Upload - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">📁 Direct Upload</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Select images directly from your file manager</p>
+        </div>
+
+        <div style="background: #e8f5e8; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="color: #155724; margin-bottom: 1rem;">📋 Instructions:</h3>
+            <ol style="color: #155724; line-height: 1.6;">
+                <li style="margin-bottom: 0.5rem;">Click the "Choose Files" button below</li>
+                <li style="margin-bottom: 0.5rem;">Select one or multiple images from your file manager</li>
+                <li style="margin-bottom: 0.5rem;">Set your encryption password and algorithm</li>
+                <li>Click "Upload & Encrypt Images" to process</li>
+            </ol>
+        </div>
+
+        <form method="POST" action="{{ url_for('direct_upload') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="images" class="form-label">Select Images</label>
+                <div style="position: relative;">
+                    <input type="file" id="images" name="images" class="form-input" multiple 
+                           accept="image/*" required
+                           style="padding: 12px; border: 2px dashed #667eea; background: #f8f9fa;">
+                    <div style="margin-top: 0.5rem;">
+                        <small style="color: #666; font-size: 0.85rem;">
+                            Supported formats: JPG, JPEG, PNG, GIF, BMP, WebP, TIFF, ICO (Max 16MB per file)
+                        </small>
+                    </div>
+                </div>
+                <div id="filePreview" style="margin-top: 1rem; display: none;">
+                    <h4 style="color: #333; margin-bottom: 0.5rem;">📋 Selected Files:</h4>
+                    <div id="fileList" style="max-height: 200px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="algorithm" class="form-label">Encryption Algorithm</label>
+                <select id="algorithm" name="algorithm" class="form-select" required>
+                    <option value="">Choose encryption method</option>
+                    <option value="AES">AES (Advanced Encryption Standard) - Recommended</option>
+                    <option value="XOR">XOR (Fast & Simple)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="encryption_password" class="form-label">Encryption Password</label>
+                <input type="password" id="encryption_password" name="encryption_password" class="form-input" required 
+                       placeholder="Create a strong encryption password" 
+                       oninput="updatePasswordIndicator(this.value, document.getElementById('encryption-strength'))">
+                <div id="encryption-strength" class="password-strength" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    ⚠️ Save this password securely! You'll need it to decrypt your images.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Encryption Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required 
+                       placeholder="Re-enter your encryption password"
+                       oninput="checkEncryptionPasswordMatch()">
+                <div id="encryption-match" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="uploadBtn">
+                🔐 Upload & Encrypt Images
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <a href="{{ url_for('upload') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                ← Back to Upload
+            </a>
+            <a href="{{ url_for('upload_from_url') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                🌐 URL Upload
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🌟 Features</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <ul style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>Direct Selection:</strong> Choose files directly from your file manager</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Multiple Files:</strong> Select and upload multiple images at once</li>
+                <li style="margin-bottom: 0.5rem;"><strong>File Validation:</strong> Automatic image format and size verification</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Secure Encryption:</strong> AES or XOR encryption for all uploads</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Preview Support:</strong> See selected files before uploading</li>
+                <li><strong>Error Handling:</strong> Detailed feedback for any upload issues</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #d1ecf1; border-radius: 8px; border: 1px solid #bee5eb;">
+            <p style="color: #0c5460; margin: 0;">
+                <strong>💡 Tip:</strong> You can select multiple files by holding Ctrl (Windows/Linux) or Cmd (Mac) while clicking.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkEncryptionPasswordMatch() {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchIndicator = document.getElementById('encryption-match');
+    
+    if (confirmPassword.length === 0) {
+        matchIndicator.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchIndicator.textContent = '✓ Passwords match';
+        matchIndicator.style.color = '#28a745';
+    } else {
+        matchIndicator.textContent = '✗ Passwords do not match';
+        matchIndicator.style.color = '#dc3545';
+    }
+}
+
+// File selection handling
+document.getElementById('images').addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const filePreview = document.getElementById('filePreview');
+    const fileList = document.getElementById('fileList');
+    
+    if (files.length > 0) {
+        filePreview.style.display = 'block';
+        fileList.innerHTML = '';
+        
+        let totalSize = 0;
+        files.forEach((file, index) => {
+            totalSize += file.size;
+            
+            const fileItem = document.createElement('div');
+            fileItem.style.cssText = 'display: flex; align-items: center; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;';
+            
+            fileItem.innerHTML = `
+                <span style="margin-right: 0.5rem;">🖼️</span>
+                <span style="flex: 1; font-size: 0.9rem;">${file.name}</span>
+                <span style="color: #666; font-size: 0.8rem;">${formatFileSize(file.size)}</span>
+            `;
+            
+            fileList.appendChild(fileItem);
+        });
+        
+        // Add total size info
+        const totalInfo = document.createElement('div');
+        totalInfo.style.cssText = 'margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; text-align: center;';
+        totalInfo.innerHTML = `<strong>${files.length} file(s) selected - Total: ${formatFileSize(totalSize)}</strong>`;
+        fileList.appendChild(totalInfo);
+        
+        // Validate files
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/x-icon'];
+        const maxSize = 16 * 1024 * 1024; // 16MB per file
+        
+        for (const file of files) {
+            if (!allowedTypes.includes(file.type)) {
+                alert(`Invalid file type: ${file.name}. Only images are allowed.`);
+                e.target.value = '';
+                filePreview.style.display = 'none';
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                alert(`File too large: ${file.name}. Maximum size is 16MB per file.`);
+                e.target.value = '';
+                filePreview.style.display = 'none';
+                return;
+            }
+        }
+        
+    } else {
+        filePreview.style.display = 'none';
+    }
+});
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const files = document.getElementById('images').files;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Encryption passwords do not match. Please try again.');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Encryption password must be at least 8 characters long.');
+        return false;
+    }
+    
+    if (files.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one image file.');
+        return false;
+    }
+    
+    // Show loading state
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.textContent = '🔄 Processing...';
+    uploadBtn.disabled = true;
+});
+</script>
+
+<style>
+.password-strength {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+#images {
+    cursor: pointer;
+}
+
+#images:hover {
+    border-color: #4c51bf !important;
+    background: #f0f4ff !important;
+}
+
+#fileList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#fileList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#fileList::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#fileList::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+{% endblock %}

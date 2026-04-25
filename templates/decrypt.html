@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Decrypt Image - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">🔓 Decrypt Image</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Enter your encryption password to recover the original image</p>
+        </div>
+
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2rem;">🔒</div>
+                <div>
+                    <h3 style="color: #333; margin-bottom: 0.25rem;">{{ image.original_filename }}</h3>
+                    <p style="color: #666; margin: 0;">
+                        <strong>Algorithm:</strong> {{ image.algorithm }} | 
+                        <strong>Size:</strong> {{ "%.2f"|format(image.file_size / 1024) }} KB | 
+                        <strong>Uploaded:</strong> {{ image.created_at.strftime('%b %d, %Y') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('decrypt', image_id=image.id) }}" id="decryptForm">
+            <div class="form-group">
+                <label for="decryption_password" class="form-label">Decryption Password</label>
+                <input type="password" id="decryption_password" name="decryption_password" class="form-input" required 
+                       placeholder="Enter the encryption password used for this image" autocomplete="current-password" autofocus>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    🔑 This is the password you created when encrypting this image
+                </small>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;" id="decryptBtn">
+                    🔓 Decrypt & Download
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="flex: 1;">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </form>
+
+        <div style="background: #fff3cd; border-radius: 8px; padding: 1rem; border: 1px solid #ffc107; margin-top: 1.5rem;">
+            <p style="color: #856404; margin: 0;">
+                <strong>⚠️ Security Notice:</strong> If you enter the wrong password 3 times, the decryption attempt will be temporarily blocked for your security.
+            </p>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🔐 Decryption Process</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <ol style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">Enter the exact password used during encryption</li>
+                <li style="margin-bottom: 0.5rem;">The system will decrypt your image securely</li>
+                <li style="margin-bottom: 0.5rem;">Your original image will be downloaded automatically</li>
+                <li>The encrypted version remains stored for future use</li>
+            </ol>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e8; border-radius: 8px; border: 1px solid #28a745;">
+            <p style="color: #155724; margin: 0;">
+                <strong>✅ Tip:</strong> Your encrypted image is safely stored and can be decrypted multiple times using the same password.
+            </p>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">❓ Forgot Your Password?</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <p style="margin-bottom: 1rem;">Unfortunately, if you've lost your encryption password, there's no way to recover the image. This is a security feature to ensure that only you can access your encrypted data.</p>
+            
+            <div style="padding: 1rem; background: #f8d7da; border-radius: 8px; border: 1px solid #dc3545;">
+                <p style="color: #721c24; margin: 0;">
+                    <strong>🔒 Important:</strong> Always store your encryption passwords in a secure password manager or write them down in a safe place.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simple form handling - let the server handle validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on password field
+    document.getElementById('decryption_password').focus();
+    
+    // Handle Enter key for form submission
+    document.getElementById('decryption_password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('decryptForm').submit();
+        }
+    });
+    
+    // Simple loading state when form is submitted
+    document.getElementById('decryptForm').addEventListener('submit', function() {
+        const decryptBtn = document.getElementById('decryptBtn');
+        decryptBtn.textContent = '🔄 Decrypting...';
+        decryptBtn.disabled = true;
+    });
+});
+
+// Password strength indicator (though decryption doesn't need it, it's for UX)
+document.getElementById('decryption_password').addEventListener('input', function() {
+    const password = this.value;
+    const decryptBtn = document.getElementById('decryptBtn');
+    
+    if (password.length > 0) {
+        decryptBtn.textContent = '🔓 Decrypt & Download';
+    } else {
+        decryptBtn.textContent = '🔓 Decrypt & Download';
+    }
+});
+
+// Show password visibility toggle (optional enhancement)
+function togglePasswordVisibility(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '👁️ Hide';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️ Show';
+    }
+}
+
+// Add password visibility toggle if needed
+const passwordInput = document.getElementById('decryption_password');
+if (passwordInput) {
+    const container = passwordInput.parentNode;
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.textContent = '👁️ Show';
+    toggleButton.style.cssText = 'position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1rem;';
+    container.style.position = 'relative';
+    container.appendChild(toggleButton);
+    
+    toggleButton.addEventListener('click', function() {
+        togglePasswordVisibility('decryption_password', 'togglePassword');
+        this.textContent = passwordInput.type === 'password' ? '👁️ Show' : '👁️ Hide';
+    });
+}
+</script>
+
+<style>
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

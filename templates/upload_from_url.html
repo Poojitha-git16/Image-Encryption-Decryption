@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Upload from URL - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">🌐 Upload from URL</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Download and encrypt images from the web</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('upload_from_url') }}">
+            <div class="form-group">
+                <label for="image_url" class="form-label">Image URL</label>
+                <input type="url" id="image_url" name="image_url" class="form-input" required 
+                       placeholder="https://example.com/image.jpg" 
+                       oninput="validateURL(this)">
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Enter the direct URL to an image file (JPG, PNG, GIF, etc.)
+                </small>
+                <div id="urlPreview" style="margin-top: 1rem; display: none;">
+                    <img id="previewImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="algorithm" class="form-label">Encryption Algorithm</label>
+                <select id="algorithm" name="algorithm" class="form-select" required>
+                    <option value="">Choose encryption method</option>
+                    <option value="AES">AES (Advanced Encryption Standard) - Recommended</option>
+                    <option value="XOR">XOR (Fast & Simple)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="encryption_password" class="form-label">Encryption Password</label>
+                <input type="password" id="encryption_password" name="encryption_password" class="form-input" required 
+                       placeholder="Create a strong encryption password" 
+                       oninput="updatePasswordIndicator(this.value, document.getElementById('encryption-strength'))">
+                <div id="encryption-strength" class="password-strength" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    ⚠️ Save this password securely! You'll need it to decrypt your image.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Encryption Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required 
+                       placeholder="Re-enter your encryption password"
+                       oninput="checkEncryptionPasswordMatch()">
+                <div id="encryption-match" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="downloadBtn">
+                🌐 Download & Encrypt Image
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <a href="{{ url_for('upload') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                ← Back to Upload
+            </a>
+            <a href="{{ url_for('direct_upload') }}" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                📁 Direct Upload
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin-top: 2rem;">
+        <h3 style="color: #333; margin-bottom: 1rem;">🌐 URL Upload Features</h3>
+        <div style="color: #666; line-height: 1.6;">
+            <ul style="padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">Download images from any direct URL</li>
+                <li style="margin-bottom: 0.5rem;">Automatic image format detection</li>
+                <li style="margin-bottom: 0.5rem;">Secure encryption before storage</li>
+                <li style="margin-bottom: 0.5rem;">Support for HTTPS and HTTP URLs</li>
+                <li>30-second timeout for reliable downloads</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border: 1px solid #ffc107;">
+            <p style="color: #856404; margin: 0;">
+                <strong>💡 Tip:</strong> Right-click any image on the web and "Copy Image Address" to get the direct URL quickly.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateURL(input) {
+    const url = input.value;
+    const preview = document.getElementById('urlPreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (url && isValidURL(url)) {
+        // Show preview if it looks like an image URL
+        if (url.match(/\.(jpg|jpeg|png|gif|bmp|webp|tiff)$/i)) {
+            previewImg.src = url;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function isValidURL(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function checkEncryptionPasswordMatch() {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchIndicator = document.getElementById('encryption-match');
+    
+    if (confirmPassword.length === 0) {
+        matchIndicator.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchIndicator.textContent = '✓ Passwords match';
+        matchIndicator.style.color = '#28a745';
+    } else {
+        matchIndicator.textContent = '✗ Passwords do not match';
+        matchIndicator.style.color = '#dc3545';
+    }
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.getElementById('encryption_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const url = document.getElementById('image_url').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Encryption passwords do not match. Please try again.');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Encryption password must be at least 8 characters long.');
+        return false;
+    }
+    
+    if (!isValidURL(url)) {
+        e.preventDefault();
+        alert('Please enter a valid URL.');
+        return false;
+    }
+    
+    // Show loading state
+    const downloadBtn = document.getElementById('downloadBtn');
+    downloadBtn.textContent = '🔄 Downloading...';
+    downloadBtn.disabled = true;
+});
+
+// Handle preview image load error
+document.getElementById('previewImg').addEventListener('error', function() {
+    this.style.display = 'none';
+    document.getElementById('urlPreview').style.display = 'none';
+});
+</script>
+
+<style>
+.password-strength {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

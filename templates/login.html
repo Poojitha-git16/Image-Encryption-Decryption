@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Secure Image Encryption System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card fade-in">
+        <div class="text-center">
+            <h1 style="color: #333; margin-bottom: 0.5rem;">Welcome Back</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Sign in to access your encrypted images</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-input" required 
+                       placeholder="Enter your username" autocomplete="username" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-input" required 
+                       placeholder="Enter your password" autocomplete="current-password">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="remember" style="margin-right: 0.5rem;">
+                    <span style="color: #666; font-size: 0.9rem;">Remember me</span>
+                </label>
+                <a href="#" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                Sign In
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e1e5e9;">
+            <p style="color: #666;">Don't have an account? 
+                <a href="{{ url_for('signup') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">Sign Up</a>
+            </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <p style="color: #666; font-size: 0.85rem; margin-bottom: 0.5rem;">Demo Account:</p>
+            <p style="color: #333; font-family: monospace; font-size: 0.9rem;">Username: admin</p>
+            <p style="color: #333; font-family: monospace; font-size: 0.9rem;">Password: admin123</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-focus on username field
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('username').focus();
+});
+
+// Handle Enter key for form submission
+document.getElementById('password').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.querySelector('form').submit();
+    }
+});
+</script>
+{% endblock %}
